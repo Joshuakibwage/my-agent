@@ -26,6 +26,53 @@ async function getFileChangesInDirectory({ rootDir }: FileChange) {
     return diffs;
 }
 
+
+
+
+const commitMessageInput = z.object({
+  diffs: z.array(z.object({
+    file: z.string(),
+    diff: z.string(),
+  })),
+});
+
+type CommitMessageInput = z.infer<typeof commitMessageInput>;
+
+async function generateCommitMessage({ diffs }: CommitMessageInput) {
+  
+  const changedFiles = diffs.map(d => d.file).join(", ");
+  return `chore: update ${changedFiles}`;
+}
+
+export const generateCommitMessageTool = tool({
+  description: "Generates a commit message based on code diffs",
+  inputSchema: commitMessageInput,
+  execute: generateCommitMessage,
+});
+
+
+const writeReviewInput = z.object({
+  review: z.string(),
+  outputPath: z.string().default("code-review.md"),
+});
+
+type WriteReviewInput = z.infer<typeof writeReviewInput>;
+
+import { promises as fs } from "fs";
+
+async function writeReviewToMarkdown({ review, outputPath }: WriteReviewInput) {
+  await fs.writeFile(outputPath, review, "utf8");
+  return `Review written to ${outputPath}`;
+}
+
+export const writeReviewToMarkdownTool = tool({
+  description: "Writes the code review to a markdown file",
+  inputSchema: writeReviewInput,
+  execute: writeReviewToMarkdown,
+});
+
+
+
 export const getFileChangesInDirectoryTool = tool({
   description: "Gets the code changes made in given directory",
   inputSchema: fileChange,
